@@ -1,4 +1,4 @@
-package edu.wpi.tmathmeyer.security.client;
+package edu.wpi.tmathmeyer.client;
 
 import java.io.DataOutputStream;
 import java.io.IOException;

@@ -6,13 +6,14 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.Random;
 
-import edu.wpi.tmathmeyer.protocol.Packet;
-import edu.wpi.tmathmeyer.protocol.client.DataHandler;
-import edu.wpi.tmathmeyer.protocol.client.DataReciever;
 import edu.wpi.tmathmeyer.security.CryptoInformation;
 import edu.wpi.tmathmeyer.security.InformationPacket;
 import edu.wpi.tmathmeyer.security.SaltPacket;
 import edu.wpi.tmathmeyer.security.SkeinHash;
+
+import edu.wpi.tmathmeyer.protocol.Packet;
+import edu.wpi.tmathmeyer.protocol.client.DataHandler;
+import edu.wpi.tmathmeyer.protocol.client.DataReciever;
 
 public class ServerSideClient implements DataHandler{
 	private Socket s;

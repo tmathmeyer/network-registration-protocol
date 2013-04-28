@@ -7,6 +7,7 @@ import java.util.ArrayList;
 
 import edu.wpi.tmathmeyer.security.SkeinHash;
 
+
 public class HashedClientManager implements Runnable{
 	private ServerSocket serverSocket;
 	private boolean running = true;
