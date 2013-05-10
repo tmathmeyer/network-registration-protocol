@@ -5,19 +5,33 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 
+import edu.wpi.tmathmeyer.hbdb.HomeBase;
 import edu.wpi.tmathmeyer.security.SkeinHash;
 
 
 public class HashedClientManager implements Runnable{
 	private ServerSocket serverSocket;
 	private boolean running = true;
-	public static byte[] password = new byte[512];
-
-	ArrayList<ServerSideClient> clients = new ArrayList<ServerSideClient>();
+	private byte[] password = new byte[512];
+	private ArrayList<ServerSideClient> clients = new ArrayList<ServerSideClient>();
+	private HomeBase database;
 	
 	
-	public HashedClientManager(int port) throws Exception{
+	public static HashedClientManager hcm;
+	public static HashedClientManager getInstance(int port) throws Exception{
+		if (hcm==null)hcm = new HashedClientManager(port);
+		return hcm;
+	}
+	
+	
+	
+	
+	
+	private HashedClientManager(int port) throws Exception{
+		hcm = this;
 		serverSocket = new ServerSocket(port, 500);
+		database = HomeBase.getInstance("NRPServerDatabase", "D:/databases");
+		database.query("{function:maketable; callID:startup; params:{users, acctname, hashedPassword, lastlogin, creationdate, statusmessage}}");
 		new Thread(this).start();
 		SkeinHash.hash("password".getBytes(), password);
 	}
@@ -54,7 +68,7 @@ public class HashedClientManager implements Runnable{
 	}
 	
 	
-	public void kill() throws IOException{
+	public void kill() throws Exception{
 		running = false;
 		serverSocket.close();
 		for(ServerSideClient c : this.clients)c.killMe();
