@@ -10,7 +10,7 @@ public class DynamicNumberOptionsPacket implements Packet{
 	
 	public byte[][] options;
 	
-	public DynamicNumberOptionsPacket(byte[][] b){
+	public DynamicNumberOptionsPacket(byte[][] b, int deambiguer){
 		this.options = b;
 	}
 	

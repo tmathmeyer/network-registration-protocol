@@ -10,7 +10,7 @@ public class DynamicSizeOptionPacket implements Packet{
 	
 	public byte[] option;
 	
-	public DynamicSizeOptionPacket(byte[] b){
+	public DynamicSizeOptionPacket(byte[] b, int deambiguifier){
 		this.option = b;
 	}
 	
