@@ -3,10 +3,10 @@ package edu.wpi.tmathmeyer.security.network;
 import java.io.DataOutputStream;
 import java.net.Socket;
 
-import edu.wpi.tmathmeyer.hbdb.HomeBase;
 import edu.wpi.tmathmeyer.protocol.Packet;
 import edu.wpi.tmathmeyer.protocol.client.DataHandler;
 import edu.wpi.tmathmeyer.protocol.client.DataReciever;
+import edu.wpi.tmathmeyer.security.network.memory.UserFileManager;
 import edu.wpi.tmathmeyer.security.network.packets.DistinctOptionPacket;
 import edu.wpi.tmathmeyer.security.network.packets.DynamicSizeOptionPacket;
 import edu.wpi.tmathmeyer.security.network.packets.HashPacket;
@@ -20,8 +20,6 @@ public class Client implements DataHandler{
 	private boolean isGuest;
 	private ClientState currentState;
 	
-	private HomeBase database;
-	
 	private String username;
 	private String email;
 	private byte[] hashedPassword;
@@ -33,8 +31,6 @@ public class Client implements DataHandler{
 	
 	public Client(ClientState cs, ClientManager cm){
 		this.holder = cm;
-		if (cs.isServerSide())
-			database = HomeBase.getInstance(cm.getUserDatabaseName(), cm.getDatabaseLocation());
 	}
 	
 	
@@ -80,12 +76,15 @@ public class Client implements DataHandler{
 				else{ //it is a DSOP
 					byte[] usr = ((DynamicSizeOptionPacket)p).option;
 					username = new String(usr);
-					//if this is a legitimate user, do this:
-					this.currentState = ClientState.Server2;
-					//and also send a hash to the client
-					
-					//otherwise, do this
-					//this.currentState = ClientState.Server4
+					if (UserFileManager.availableUsername(username)){
+						this.currentState = ClientState.Server4;
+						//send away a packet
+					}
+					else{
+						this.currentState = ClientState.Server2;
+						salt = generateSalt();
+						// also send a hash to the client
+					}
 				}
 			}
 			
@@ -95,14 +94,9 @@ public class Client implements DataHandler{
 			//           non-existant, and is waiting for a response on whether or not to register
 			else if (this.currentState.equals(ClientState.Server2)){
 				if (p instanceof DistinctOptionPacket){
-					if (((DistinctOptionPacket)p).option == 0){
-						this.currentState = ClientState.Server1;
-					}
-					else{
-						throw new Exception("i think the user tried to send a nevermind command, and failed miserably");
-					}
+					this.currentState = ClientState.Server1;
 				}
-				else{ //otherwise, it is a salt
+				else{ //otherwise, it is a hashed password
 					byte[] usersHashedPassword = ((HashPacket)p).option;
 					
 					//this could go to server5 if the hash is good,
