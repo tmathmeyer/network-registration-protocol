@@ -13,6 +13,7 @@ public class UserFileManager {
 	 * @return whether this user exists
 	 */
 	public static boolean availableUsername(String name){
+		mkdir();
 		File f = new File("users/"+name+".cu");
 		return !f.exists();
 	}
@@ -27,6 +28,7 @@ public class UserFileManager {
 	 * @return whether the password was correct
 	 */
 	public static boolean login(String name, byte[] password){
+		mkdir();
 		File f = new File("users/"+name+".cu");
 		try{
 			BufferedReader br = new BufferedReader(new FileReader(f));
@@ -46,6 +48,7 @@ public class UserFileManager {
 	
 	
 	public static byte[] getHashedPassword(String name){
+		mkdir();
 		File f = new File("users/"+name+".cu");
 		try{
 			BufferedReader br = new BufferedReader(new FileReader(f));
@@ -73,8 +76,9 @@ public class UserFileManager {
 	 * @return
 	 */
 	public static boolean register(String name, byte[] password){
-		System.out.println("ATTEMPTING TO REGISTER");
+		mkdir();
 		try{
+			if (!availableUsername(name))throw new Exception();
 			File f = new File("users/"+name+".cu");
 			f.createNewFile();
 			FileWriter fstream = new FileWriter(f);
@@ -86,6 +90,11 @@ public class UserFileManager {
 		catch(Exception e){
 			return false;
 		}
+	}
+	
+	public static void mkdir(){
+		File f = new File("users/");
+		f.mkdir();
 	}
 	
 	private static String getString(byte[] b){

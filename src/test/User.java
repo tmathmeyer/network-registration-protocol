@@ -26,7 +26,7 @@ public class User implements ClientManager{
 		this.c.setCurrentState(ClientState.Client2);
 		this.c.sendPacket(new DistinctOptionPacket((byte) 1));
 		
-		byte[] usr = "tmathmeyer".getBytes();
+		byte[] usr = "ted".getBytes();
 		byte[] pass = new byte[512];
 		SkeinHash.hash("pass".getBytes(), pass);
 		byte[] email = "ted.is@the.best".getBytes();
