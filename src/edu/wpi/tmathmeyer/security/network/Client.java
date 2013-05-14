@@ -46,6 +46,9 @@ public class Client implements DataHandler{
 	public void setCurrentState(ClientState cs){
 		this.currentState = cs;
 	}
+	public void setPassword(byte[] b){
+		this.hashedPassword = b;
+	}
 	
 	
 	
@@ -88,12 +91,12 @@ public class Client implements DataHandler{
 					username = new String(usr);
 					if (UserFileManager.availableUsername(username)){
 						this.currentState = ClientState.Server4;
-						//send away a packet telling them the username was vacated
+						this.sendPacket(new DistinctOptionPacket((byte) 0));
 					}
 					else{
 						this.currentState = ClientState.Server2;
 						salt = generateSalt();
-						// also send a hash to the client
+						this.sendPacket(new HashPacket(salt, 0));
 					}
 				}
 			}
@@ -107,17 +110,26 @@ public class Client implements DataHandler{
 				}
 				else{ //otherwise, it is a hashed password
 					byte[] usersHashedPassword = ((HashPacket)p).option;
+					
 					byte[] savedUserPassword = UserFileManager.getHashedPassword(username);
 					for(int i=0;i<512;i++)savedUserPassword[i] = (byte) (savedUserPassword[i]+salt[i]);
 					byte[] generatedPassword = new byte[512];
 					SkeinHash.hash(savedUserPassword, generatedPassword);
-					if (usersHashedPassword == generatedPassword){
+					boolean good = true;
+					for(int i=0;i<512;i++)
+						if (usersHashedPassword[i] != generatedPassword[i])good = false;
+					
+					
+					if (good){
 						//login was good. notify the user
 						this.currentState = ClientState.Server5;
+						this.sendPacket(new DistinctOptionPacket((byte) 9));
 					}
 					else{
 						//login was bad. notify the user
+						
 						this.currentState = ClientState.Server2;
+						this.sendPacket(new DistinctOptionPacket((byte) 8));
 					}
 				}
 			}
@@ -206,14 +218,14 @@ public class Client implements DataHandler{
 				if (p instanceof HashPacket){
 					HashPacket hp = (HashPacket)p;
 					salt = hp.option;
-					for(int i=0;i<512;i++)hashedPassword[i]+=salt[i];
+					for(int i=0;i<512;i++)hashedPassword[i] = (byte) (hashedPassword[i]+salt[i]);
 					byte[] val = new byte[512];
 					SkeinHash.hash(hashedPassword, val);
 					for(int i=0;i<512;i++)hashedPassword[i]-=salt[i];
 					this.currentState = ClientState.Client2;
-					this.sendPacket(new HashPacket(val));
+					this.sendPacket(new HashPacket(val, 0));
 				}
-				else{
+				else{ //username does not exist in the database
 					this.currentState = ClientState.ClientEmpty;
 				}
 			}
@@ -221,7 +233,7 @@ public class Client implements DataHandler{
 				DistinctOptionPacket dos = (DistinctOptionPacket)p;
 				this.currentState = ClientState.ClientEmpty;
 				if (dos.option == 9){
-					this.print("you have registered as a guest");
+					this.print("you have logged in successfully");
 					return true;
 				}
 				else if (dos.option == 8){

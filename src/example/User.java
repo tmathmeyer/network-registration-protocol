@@ -1,4 +1,4 @@
-package test;
+package example;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -8,8 +8,9 @@ import edu.wpi.tmathmeyer.security.network.Client;
 import edu.wpi.tmathmeyer.security.network.ClientManager;
 import edu.wpi.tmathmeyer.security.network.ClientState;
 import edu.wpi.tmathmeyer.security.network.SkeinHash;
-import edu.wpi.tmathmeyer.security.network.packets.DistinctOptionPacket;
-import edu.wpi.tmathmeyer.security.network.packets.DynamicNumberOptionsPacket;
+//import edu.wpi.tmathmeyer.security.network.packets.DistinctOptionPacket;
+//import edu.wpi.tmathmeyer.security.network.packets.DynamicNumberOptionsPacket;
+import edu.wpi.tmathmeyer.security.network.packets.DynamicSizeOptionPacket;
 
 public class User implements ClientManager{
 	
@@ -23,15 +24,11 @@ public class User implements ClientManager{
 	public User(Socket s) throws IOException{
 		Client c = new Client(ClientState.ClientEmpty, this, s);
 		this.addNewClient(c);
-		this.c.setCurrentState(ClientState.Client2);
-		this.c.sendPacket(new DistinctOptionPacket((byte) 1));
-		
-		byte[] usr = "ted".getBytes();
+		this.c.setCurrentState(ClientState.Client1);
 		byte[] pass = new byte[512];
 		SkeinHash.hash("pass".getBytes(), pass);
-		byte[] email = "ted.is@the.best".getBytes();
-		byte[][] sending = {usr,pass,email};
-		this.c.sendPacket(new DynamicNumberOptionsPacket(sending, 0));
+		this.c.setPassword(pass);
+		this.c.sendPacket(new DynamicSizeOptionPacket("ted".getBytes(), 0));
 	}
 	
 	@Override

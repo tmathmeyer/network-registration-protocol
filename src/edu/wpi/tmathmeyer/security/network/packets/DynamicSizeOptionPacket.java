@@ -15,7 +15,7 @@ public class DynamicSizeOptionPacket implements Packet{
 	}
 	
 	public DynamicSizeOptionPacket(DataInputStream dis) throws IOException{
-		int size = dis.readByte();
+		int size = dis.readInt();
 		this.option = new byte[size];
 		for(int i=0;i<size;i++)
 			this.option[i] = dis.readByte();
