@@ -85,4 +85,14 @@ public class ClientState {
 	public static final ClientState Server4 = new ClientState("ServerStateFour", S4);
 	public static final ClientState Server5 = new ClientState("ServerStateFive", S5);
 	
+	
+	
+	public static final Packet[] C1 = {new HashPacket(null), new DistinctOptionPacket((byte) 0)};
+	public static final Packet[] C2 = {new DistinctOptionPacket((byte) 0)};
+	public static final Packet[] C3 = {new DistinctOptionPacket((byte) 0), new DynamicNumberOptionsPacket(null, 0)};
+	
+	public static final ClientState Client1 = new ClientState("ClientStatusOne", C1);
+	public static final ClientState Client2 = new ClientState("ClientStatusTwo", C2);
+	public static final ClientState Client3 = new ClientState("ClientStatusThree", C3);
+	public static final ClientState ClientEmpty = new ClientState("ClientStateEmpty", S5);
 }

@@ -1,6 +1,8 @@
 package edu.wpi.tmathmeyer.security.network;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 
 import edu.wpi.tmathmeyer.protocol.Packet;
@@ -8,6 +10,7 @@ import edu.wpi.tmathmeyer.protocol.client.DataHandler;
 import edu.wpi.tmathmeyer.protocol.client.DataReciever;
 import edu.wpi.tmathmeyer.security.network.memory.UserFileManager;
 import edu.wpi.tmathmeyer.security.network.packets.DistinctOptionPacket;
+import edu.wpi.tmathmeyer.security.network.packets.DynamicNumberOptionsPacket;
 import edu.wpi.tmathmeyer.security.network.packets.DynamicSizeOptionPacket;
 import edu.wpi.tmathmeyer.security.network.packets.HashPacket;
 
@@ -15,6 +18,7 @@ import edu.wpi.tmathmeyer.security.network.packets.HashPacket;
 public class Client implements DataHandler{
 
 	private DataOutputStream dataOut;
+	private DataInputStream dataIn;
 	private Socket connection;
 	private boolean isAuthenticated;
 	private boolean isGuest;
@@ -27,10 +31,15 @@ public class Client implements DataHandler{
 	
 	private ClientManager holder;
 	
+	private byte[][] unfilledRequirements; //CLIENTSIDE ONLY LOL
 	
-	
-	public Client(ClientState cs, ClientManager cm){
+	public Client(ClientState cs, ClientManager cm, Socket s) throws IOException{
 		this.holder = cm;
+		this.currentState = cs;
+		this.connection = s;
+		this.dataIn = new DataInputStream(s.getInputStream());
+		this.dataOut = new DataOutputStream(s.getOutputStream());
+		new Thread(this).start();
 	}
 	
 	
@@ -50,7 +59,8 @@ public class Client implements DataHandler{
 	
 	@Override
 	public void run(){
-		
+		this.startReciever(dr)
+		while(true);
 	}
 
 	@Override
@@ -66,7 +76,6 @@ public class Client implements DataHandler{
 						this.username = this.holder.getAvailName();
 						this.isGuest = true;
 						this.currentState = ClientState.Server5;
-						return true;
 					}
 					else if (castedPacket.option == 1){
 						// this user wants to register.
@@ -78,7 +87,7 @@ public class Client implements DataHandler{
 					username = new String(usr);
 					if (UserFileManager.availableUsername(username)){
 						this.currentState = ClientState.Server4;
-						//send away a packet
+						//send away a packet telling them the username was vacated
 					}
 					else{
 						this.currentState = ClientState.Server2;
@@ -87,7 +96,6 @@ public class Client implements DataHandler{
 					}
 				}
 			}
-			
 			//for case:  server has recieved the username from the player.
 			// 			 the server has either replied with a hash and is waiting,
 			//			 or, the server has replied saying that the username is 
@@ -98,27 +106,48 @@ public class Client implements DataHandler{
 				}
 				else{ //otherwise, it is a hashed password
 					byte[] usersHashedPassword = ((HashPacket)p).option;
-					
-					//this could go to server5 if the hash is good,
-					//or this could go to server2 again if it is bad
-					
-					
+					byte[] savedUserPassword = UserFileManager.getHashedPassword(username);
+					for(int i=0;i<512;i++)savedUserPassword[i] = (byte) (savedUserPassword[i]+salt[i]);
+					byte[] generatedPassword = new byte[512];
+					SkeinHash.hash(savedUserPassword, generatedPassword);
+					if (usersHashedPassword == generatedPassword){
+						//login was good. notify the user
+						this.currentState = ClientState.Server5;
+					}
+					else{
+						//login was bad. notify the user
+						this.currentState = ClientState.Server2;
+					}
 				}
 			}
 			else if (this.currentState.equals(ClientState.Server3)){
-				
-				//update info with current packet
-				
 				boolean u_bool = username==null;
 				boolean p_bool = hashedPassword==null;
 				boolean e_bool = email==null;
 				boolean s_bool = salt==null;
 				if (s_bool)salt=generateSalt();
+				byte[][] data = ((DynamicNumberOptionsPacket)p).options;
+				//fill in sent data
+				for(int i=0;i<data.length;i++){
+					if (u_bool){
+						username = new String(data[i]);
+						u_bool=true;
+					}
+					else if (p_bool){
+						hashedPassword = data[i];
+						p_bool=true;
+					}
+					else if (e_bool){
+						email = new String(data[i]);
+						e_bool=true;
+					}
+				}
+				//send remaining info request
 				byte[][] reqinfo = new byte[(u_bool?1:0) + (p_bool?1:0) + (e_bool?1:0)][];
 				if (reqinfo.length == 0){
 					this.currentState = ClientState.Server5;
+					UserFileManager.register(username, hashedPassword);
 					//notify the user that they have registered
-					//store credentials in database
 				}
 				else{
 					for(int i=0;i<reqinfo.length;i++){
@@ -154,40 +183,143 @@ public class Client implements DataHandler{
 				else
 					this.currentState = ClientState.Server3;
 			}
-			
-			
 			if (this.currentState.equals(ClientState.Server5)){
-				//send initial chat thingies
+				this.sendPacket(new DistinctOptionPacket((byte) 9));
 				return true;
+			}
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			else if (this.currentState.equals(ClientState.Client1)){
+				if (p instanceof HashPacket){
+					HashPacket hp = (HashPacket)p;
+					salt = hp.option;
+					for(int i=0;i<512;i++)hashedPassword[i]+=salt[i];
+					byte[] val = new byte[512];
+					SkeinHash.hash(hashedPassword, val);
+					for(int i=0;i<512;i++)hashedPassword[i]-=salt[i];
+					this.currentState = ClientState.Client2;
+					this.sendPacket(new HashPacket(val));
+				}
+				else{
+					this.currentState = ClientState.ClientEmpty;
+				}
+			}
+			else if (this.currentState.equals(ClientState.Client2)){
+				DistinctOptionPacket dos = (DistinctOptionPacket)p;
+				this.currentState = ClientState.ClientEmpty;
+				if (dos.option == 9)
+					return true;
+			}
+			else if (this.currentState.equals(ClientState.Client3)){
+				if (p instanceof DynamicNumberOptionsPacket){
+					DynamicNumberOptionsPacket hp = (DynamicNumberOptionsPacket)p;
+					this.unfilledRequirements = hp.options;
+				}
+				else{
+					this.currentState = ClientState.ClientEmpty;
+					return true;
+				}
 			}
 		}
 		return false;
 	}
 	
+	
+	public void sendPacket(Packet p){
+		try {
+			p.write(getByteOutputStream());
+		} catch (IOException e) {
+			this.print(e);
+		}
+	}
+	
+	
+	
+	
+	
+	
+	
 	public byte[] generateSalt(){
 		return new byte[512];
 	}
 
+	
+	
+	
+	
+	
+	
+	
+	
 	@Override
 	public void closeOutStream() throws Exception {
 		this.dataOut.close();
 	}
 
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	@Override
 	public DataOutputStream getByteOutputStream() {
 		return this.dataOut;
 	}
 
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	@Override
 	public Socket getSocket() {
 		return this.connection;
 	}
 
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	@Override
 	public byte getVersionID() {
 		return 1;
 	}
 
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	@Override
 	public void kill() {
 		try {
@@ -198,11 +330,33 @@ public class Client implements DataHandler{
 		}
 	}
 
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	@Override
 	public void print(Object arg0) {
 		System.out.println(arg0);
 	}
 
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	@Override
 	public Packet processPacket(Packet p) throws Exception {
 		if (! this.isAuthenticated){
@@ -214,10 +368,34 @@ public class Client implements DataHandler{
 		return p;
 	}
 
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	@Override
 	public void startReciever(DataReciever dr) {
 		new Thread(dr).start();
 	}
-	
-	
+
+
+
+
+
+
+
+
+
+
+	/**
+	 * @return the unfilledRequirements
+	 */
+	public byte[][] getUnfilledRequirements() {
+		return unfilledRequirements;
+	}
 }

@@ -45,6 +45,25 @@ public class UserFileManager {
 	}
 	
 	
+	public static byte[] getHashedPassword(String name){
+		File f = new File("users/"+name+".cu");
+		try{
+			BufferedReader br = new BufferedReader(new FileReader(f));
+			String line;
+			while((line = br.readLine()) != null){
+				if (line.startsWith("password:")){
+					line = line.substring(9);
+					return getBytes(line);
+				}
+			}
+			throw new Exception("this user was found, yet there was no record of a password");
+		}
+		catch(Exception e){
+			return new byte[512];
+		}
+	}
+	
+	
 	
 	
 	/**
