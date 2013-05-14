@@ -73,6 +73,7 @@ public class UserFileManager {
 	 * @return
 	 */
 	public static boolean register(String name, byte[] password){
+		System.out.println("ATTEMPTING TO REGISTER");
 		try{
 			File f = new File("users/"+name+".cu");
 			f.createNewFile();

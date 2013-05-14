@@ -22,6 +22,11 @@ public class Server implements ClientManager, Runnable{
 		me.start();	
 	}
 	
+	
+	public static void main(String[] args) throws Exception{
+		new Server(8338);
+	}
+	
 	@Override
 	public String getAvailName() {
 		return "GUEST"+Math.random();
@@ -30,18 +35,6 @@ public class Server implements ClientManager, Runnable{
 	@Override
 	public void addNewClient(Client c) {
 		
-	}
-
-	@Override
-	public String getUserDatabaseName() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String getDatabaseLocation() {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 	@Override

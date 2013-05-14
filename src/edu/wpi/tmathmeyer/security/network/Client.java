@@ -1,6 +1,5 @@
 package edu.wpi.tmathmeyer.security.network;
 
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
@@ -18,9 +17,9 @@ import edu.wpi.tmathmeyer.security.network.packets.HashPacket;
 public class Client implements DataHandler{
 
 	private DataOutputStream dataOut;
-	private DataInputStream dataIn;
 	private Socket connection;
 	private boolean isAuthenticated;
+	@SuppressWarnings("unused")
 	private boolean isGuest;
 	private ClientState currentState;
 	
@@ -29,22 +28,24 @@ public class Client implements DataHandler{
 	private byte[] hashedPassword;
 	private byte[] salt;
 	
+	private DataReciever dr;
 	private ClientManager holder;
-	
 	private byte[][] unfilledRequirements; //CLIENTSIDE ONLY LOL
 	
 	public Client(ClientState cs, ClientManager cm, Socket s) throws IOException{
 		this.holder = cm;
 		this.currentState = cs;
 		this.connection = s;
-		this.dataIn = new DataInputStream(s.getInputStream());
 		this.dataOut = new DataOutputStream(s.getOutputStream());
+		this.dr = new DataReciever(s, this, ClientState.allPackets);
 		new Thread(this).start();
 	}
 	
 	
 	
-	
+	public void setCurrentState(ClientState cs){
+		this.currentState = cs;
+	}
 	
 	
 	
@@ -59,7 +60,7 @@ public class Client implements DataHandler{
 	
 	@Override
 	public void run(){
-		this.startReciever(dr)
+		this.startReciever(dr);
 		while(true);
 	}
 
@@ -131,37 +132,41 @@ public class Client implements DataHandler{
 				for(int i=0;i<data.length;i++){
 					if (u_bool){
 						username = new String(data[i]);
-						u_bool=true;
+						u_bool=false;
 					}
 					else if (p_bool){
 						hashedPassword = data[i];
-						p_bool=true;
+						p_bool=false;
 					}
 					else if (e_bool){
 						email = new String(data[i]);
-						e_bool=true;
+						e_bool=false;
 					}
 				}
 				//send remaining info request
 				byte[][] reqinfo = new byte[(u_bool?1:0) + (p_bool?1:0) + (e_bool?1:0)][];
 				if (reqinfo.length == 0){
-					this.currentState = ClientState.Server5;
-					UserFileManager.register(username, hashedPassword);
+					if (UserFileManager.register(username, hashedPassword))
+						this.currentState = ClientState.Server5;
+					else{
+						this.currentState = ClientState.Server1;
+						this.sendPacket(new DistinctOptionPacket((byte) 8));
+					}
 					//notify the user that they have registered
 				}
 				else{
 					for(int i=0;i<reqinfo.length;i++){
 						if (u_bool){
 							reqinfo[i] = "username".getBytes();
-							u_bool=true;
+							u_bool=false;
 						}
 						else if (p_bool){
 							reqinfo[i] = "password".getBytes();
-							p_bool=true;
+							p_bool=false;
 						}
 						else if (e_bool){
 							reqinfo[i] = "email".getBytes();
-							e_bool=true;
+							e_bool=false;
 						}
 					}
 					//send reqinfo to the user, do not change state
@@ -197,7 +202,7 @@ public class Client implements DataHandler{
 			
 			
 			
-			else if (this.currentState.equals(ClientState.Client1)){
+			if (this.currentState.equals(ClientState.Client1)){
 				if (p instanceof HashPacket){
 					HashPacket hp = (HashPacket)p;
 					salt = hp.option;
@@ -215,8 +220,17 @@ public class Client implements DataHandler{
 			else if (this.currentState.equals(ClientState.Client2)){
 				DistinctOptionPacket dos = (DistinctOptionPacket)p;
 				this.currentState = ClientState.ClientEmpty;
-				if (dos.option == 9)
+				if (dos.option == 9){
+					this.print("you have registered as a guest");
 					return true;
+				}
+				else if (dos.option == 8){
+					this.print("that username has already been registered");
+					return true;
+				}
+				else{
+					this.print("send moar");
+				}
 			}
 			else if (this.currentState.equals(ClientState.Client3)){
 				if (p instanceof DynamicNumberOptionsPacket){

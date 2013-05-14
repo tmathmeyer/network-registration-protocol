@@ -71,7 +71,7 @@ public class ClientState {
 	
 	
 	
-	
+	public static final Packet[] allPackets = {new DistinctOptionPacket((byte) 0), new DynamicSizeOptionPacket(null, 1), new HashPacket(null), new DynamicNumberOptionsPacket(null, 0)};
 	
 	public static final Packet[] S1 = {new DistinctOptionPacket((byte) 0), new DynamicSizeOptionPacket(null, 1)};
 	public static final Packet[] S2 = {new DistinctOptionPacket((byte) 0), new HashPacket(null)};

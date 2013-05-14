@@ -33,6 +33,7 @@ public class DynamicNumberOptionsPacket implements Packet{
 	@Override
 	public void write(DataOutputStream dos) throws IOException {
 		dos.write(this.getPacketID());
+		dos.writeInt(this.options.length);
 		for(int i=0;i<options.length;i++){
 			dos.writeInt(options[i].length);
 			dos.write(options[i]);
