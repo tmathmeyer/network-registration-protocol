@@ -13,3 +13,5 @@ to use this, there are a few simple steps, as shown in the example classes. howe
 		generateSalt();
 			try to do random?
 2. I havent thought of any more yet, ill post them later :D
+
+-Ted
