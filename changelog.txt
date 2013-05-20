@@ -1,0 +1,4 @@
+this is where all new changes will be shown for ezpzness
+
+-5/19/2013
+	added changeloag and signed the readme
