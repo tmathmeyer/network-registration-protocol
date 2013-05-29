@@ -1,22 +1,22 @@
-This is an extension of the Synchronous-Network-Protocol found at https://github.com/tmathmeyer/Synchronous-Network-Protocol
+This is an extension of the Synchronous-Network-Protocol found at https://github.com/tmathmeyer/Synchronous-Network-Protocol<br />
 
-this protocol works through the following steps to authenticate a user
-client connects to server
-client -> server "I would like to login"
-server -> client "here are a random 512 bytes"
-client -> server "I've hashed the password that the user entered, combined it with the salt, and re-hashed the result"
-server -> client "that is the correct hash, this connection now has access to the functions of the server which have yet to be implemented"
-client -> server {rest of the data}
+this protocol works through the following steps to authenticate a user<br />
+client connects to server<br />
+client -> server "I would like to login"<br />
+server -> client "here are a random 512 bytes"<br />
+client -> server "I've hashed the password that the user entered, combined it with the salt, and re-hashed the result"<br />
+server -> client "that is the correct hash, this connection now has access to the functions of the server which have yet to be implemented"<br />
+client -> server {rest of the data}<br />
 
-for registration, the system works like this:
-client connects to server
-client -> server "here is my hashed password and my username"
-server -> client "that is an availible username, i've save the hashed password"
-
-
+for registration, the system works like this:<br />
+client connects to server<br />
+client -> server "here is my hashed password and my username"<br />
+server -> client "that is an availible username, i've save the hashed password"<br />
 
 
-An implementation of this system would look something like this:
+
+
+An implementation of this system would look something like this:<br />
 
 public class TestClient extends Client{
 	public Packet processPacket(Packet p){
