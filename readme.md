@@ -1,17 +1,47 @@
 This is an extension of the Synchronous-Network-Protocol found at https://github.com/tmathmeyer/Synchronous-Network-Protocol
 
-to use this, there are a few simple steps, as shown in the example classes. however, there are a few things I didnt do in them that I should have done, had I to build an actual system out of them. (that's on the way)
+this protocol works through the following steps to authenticate a user
+client connects to server
+client -> server "I would like to login"
+server -> client "here are a random 512 bytes"
+client -> server "I've hashed the password that the user entered, combined it with the salt, and re-hashed the result"
+server -> client "that is the correct hash, this connection now has access to the functions of the server which have yet to be implemented"
+client -> server {rest of the data}
 
-1. Make a new class that extends Client:
-	you should override the following methods:
-		processPacket(Packet p);
-			the first line in this method should be:
-				p = super.processPacket(p);
-			this will return null if the system has not been authenticated. youshould have no reason to access it. If it has been activated, you should have full access to all the packets.
-		print(Object o);
-			should probably use some sort of custom output writer, if you would like, or system.out
-		generateSalt();
-			try to do random?
-2. I havent thought of any more yet, ill post them later :D
+for registration, the system works like this:
+client connects to server
+client -> server "here is my hashed password and my username"
+server -> client "that is an availible username, i've save the hashed password"
 
--Ted
+
+
+
+An implementation of this system would look something like this:
+
+public class TestClient extends Client{
+	public Packet processPacket(Packet p){
+		p = super.processPacket(p);
+		if (p == null)
+		{
+			//the system is not authenticated, the packet was consumed in the process
+		}
+		else
+		{
+			//the system has been authenticated, the packet was not comsumed, and can be used
+		}
+		return null;
+	}
+
+	public void print(Object o){
+		System.out.println(o.toString());
+	}
+
+	public byte[] generateSalt(){
+		byte[] r = new byte[512];
+		for(int i=0;i<512;i++)
+		{
+			r[i] = (byte)Math.random()*Byte.MAX_VALUE;
+		}
+		return r;
+	}
+}
