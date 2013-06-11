@@ -18,6 +18,7 @@ server -> client "that is an availible username, i've save the hashed password"<
 
 An implementation of this system would look something like this:<br />
 
+```java
 public class TestClient extends Client{
 	public Packet processPacket(Packet p){
 		p = super.processPacket(p);
@@ -45,3 +46,4 @@ public class TestClient extends Client{
 		return r;
 	}
 }
+```
